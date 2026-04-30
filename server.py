@@ -6,7 +6,8 @@ import json
 app = Flask(__name__)
 CORS(app)
 
-OLLAMA_API_KEY = "e3023131761f4713ad4d92f9ad8cb41f.hQ8u51Wq_H_dwAx5KanEZbYu"
+import os
+OLLAMA_API_KEY = os.environ.get("e3023131761f4713ad4d92f9ad8cb41f.hQ8u51Wq_H_dwAx5KanEZbYu")
 
 @app.route("/")
 def index():
@@ -39,4 +40,6 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Nova server running at http://localhost:{port}")
+    app.run(port=port, host="0.0.0.0", debug=False)

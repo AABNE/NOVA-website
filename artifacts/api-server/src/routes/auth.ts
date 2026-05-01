@@ -1,13 +1,21 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
+import crypto from "crypto";
 
 const router = Router();
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || "";
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || "";
-const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3000/api/callback";
+const REDIRECT_URI = process.env.REDIRECT_URI;
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
+
+function getRedirectUri(req: Request): string {
+  if (REDIRECT_URI) return REDIRECT_URI;
+  const proto = req.protocol;
+  const host = req.get("host") || "localhost";
+  return `${proto}://${host}/api/callback`;
+}
 
 async function supabaseRequest(method: string, path: string, data?: unknown) {
   const url = `${SUPABASE_URL}/rest/v1/${path}`;
@@ -45,18 +53,32 @@ export async function saveMessage(userId: string, role: string, content: string)
 }
 
 router.get("/login", (req: Request, res: Response) => {
+  const state = crypto.randomBytes(16).toString("hex");
+  const sess = req.session as Record<string, unknown>;
+  sess.oauth_state = state;
+  const redirectUri = getRedirectUri(req);
   const params = new URLSearchParams({
     client_id: DISCORD_CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: redirectUri,
     response_type: "code",
     scope: "identify",
+    state,
   });
   res.redirect(`https://discord.com/oauth2/authorize?${params}`);
 });
 
 router.get("/callback", async (req: Request, res: Response) => {
   const code = req.query.code as string;
-  if (!code) { res.redirect("/"); return; }
+  const returnedState = req.query.state as string;
+  const sess = req.session as Record<string, unknown>;
+
+  if (!code || !returnedState || returnedState !== sess.oauth_state) {
+    res.redirect("/");
+    return;
+  }
+  delete sess.oauth_state;
+
+  const redirectUri = getRedirectUri(req);
 
   try {
     const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
@@ -67,7 +89,7 @@ router.get("/callback", async (req: Request, res: Response) => {
         client_secret: DISCORD_CLIENT_SECRET,
         grant_type: "authorization_code",
         code,
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: redirectUri,
       }),
     });
     const tokenData = await tokenRes.json() as { access_token?: string };

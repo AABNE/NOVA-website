@@ -449,8 +449,7 @@
 </div>
 
 <script>
-
-  const OLLAMA_MODEL = "gpt-oss:120b";
+const OLLAMA_MODEL = "gpt-oss:120b";
 
 const chat = document.getElementById("chat");
 const input = document.getElementById("user-input");
@@ -460,16 +459,18 @@ let history = [];
 let isProcessing = false;
 let currentUser = null;
 
-// check login status on load
 async function init() {
-  const res = await fetch("/me", { credentials: "include" });
-  const data = await res.json();
-
-  if (data.logged_in) {
-    currentUser = data;
-    showLoggedIn(data);
-    await loadHistory();
-  } else {
+  try {
+    const res = await fetch("/me", { credentials: "include" });
+    const data = await res.json();
+    if (data.logged_in) {
+      currentUser = data;
+      showLoggedIn(data);
+      await loadHistory();
+    } else {
+      showLoginScreen();
+    }
+  } catch (e) {
     showLoginScreen();
   }
 }
@@ -478,17 +479,9 @@ function showLoginScreen() {
   const welcome = document.getElementById("welcome");
   if (welcome) welcome.innerHTML = `
     <h1>Hey, I'm Nova</h1>
-    <p>Your jack of all trades AI assistant.<br>Log in with Discord to start chatting and sync your conversations.</p>
-    <a href="/login" style="
-      display:inline-flex;align-items:center;gap:10px;
-      padding:14px 28px;border-radius:12px;
-      background:#5865F2;color:white;text-decoration:none;
-      font-family:'Syne',sans-serif;font-weight:700;font-size:15px;
-      margin-top:16px;transition:all 0.2s;
-      box-shadow:0 0 20px rgba(88,101,242,0.3);">
-      <svg width="22" height="22" viewBox="0 0 71 55" fill="white">
-        <path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.4a40.6 40.6 0 0 0-1.8 3.7 54.2 54.2 0 0 0-16.3 0A38.7 38.7 0 0 0 25.6.4 58.4 58.4 0 0 0 11 5C1.6 19.1-1 32.8.3 46.4a58.9 58.9 0 0 0 18 9.1 44.3 44.3 0 0 0 3.8-6.2 38.4 38.4 0 0 1-6-2.9l1.5-1.1a41.9 41.9 0 0 0 36 0l1.5 1.1a38.3 38.3 0 0 1-6 2.9 44 44 0 0 0 3.8 6.2 58.7 58.7 0 0 0 18-9.1C72.2 30.6 68 17 60.1 4.9ZM23.7 38.1c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.3 6.4 7.2c0 4-2.8 7.2-6.4 7.2Zm23.6 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.3 6.4 7.2c0 4-2.8 7.2-6.4 7.2Z"/>
-      </svg>
+    <p>Your jack of all trades AI assistant.<br>Login with Discord to start chatting and sync your conversations.</p>
+    <a href="/login" style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;border-radius:12px;background:#5865F2;color:white;text-decoration:none;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-top:16px;transition:all 0.2s;box-shadow:0 0 20px rgba(88,101,242,0.3);">
+      <svg width="22" height="22" viewBox="0 0 71 55" fill="white"><path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.4a40.6 40.6 0 0 0-1.8 3.7 54.2 54.2 0 0 0-16.3 0A38.7 38.7 0 0 0 25.6.4 58.4 58.4 0 0 0 11 5C1.6 19.1-1 32.8.3 46.4a58.9 58.9 0 0 0 18 9.1 44.3 44.3 0 0 0 3.8-6.2 38.4 38.4 0 0 1-6-2.9l1.5-1.1a41.9 41.9 0 0 0 36 0l1.5 1.1a38.3 38.3 0 0 1-6 2.9 44 44 0 0 0 3.8 6.2 58.7 58.7 0 0 0 18-9.1C72.2 30.6 68 17 60.1 4.9ZM23.7 38.1c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.3 6.4 7.2c0 4-2.8 7.2-6.4 7.2Zm23.6 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.3 6.4 7.2c0 4-2.8 7.2-6.4 7.2Z"/></svg>
       Login with Discord
     </a>
   `;
@@ -498,7 +491,6 @@ function showLoginScreen() {
 }
 
 function showLoggedIn(user) {
-  // update header with user info
   const header = document.querySelector("header");
   const userDiv = document.createElement("div");
   userDiv.style.cssText = "display:flex;align-items:center;gap:10px;";
@@ -508,15 +500,12 @@ function showLoggedIn(user) {
     <a href="/logout" style="font-size:12px;color:var(--text-dim);text-decoration:none;padding:5px 10px;border:1px solid var(--border);border-radius:6px;">Logout</a>
   `;
   header.appendChild(userDiv);
-
   input.disabled = false;
   sendBtn.disabled = false;
   input.placeholder = "Message Nova...";
-
-  // set system prompt
   history = [{
     role: "system",
-    content: `You are Nova, a jack of all trades AI assistant.
+    content: `You are Nova, a jack of all trades AI assistant on a website.
 You were created by AussieAviationBNE.
 The person talking to you is ${user.username}.
 ${user.username} is NOT your creator — AussieAviationBNE made you.
@@ -542,14 +531,12 @@ async function loadHistory() {
   try {
     const res = await fetch("/history", { credentials: "include" });
     const messages = await res.json();
-
     if (messages.length > 0) {
       removeWelcome();
       for (const msg of messages) {
+        if (msg.role === "system") continue;
         appendMessage(msg.role === "user" ? "user" : "nova", msg.content);
-        if (msg.role !== "system") {
-          history.push({ role: msg.role, content: msg.content });
-        }
+        history.push({ role: msg.role, content: msg.content });
       }
     }
   } catch (e) {
@@ -603,7 +590,6 @@ function appendMessage(role, content) {
 
   const bubble = document.createElement("div");
   bubble.className = "bubble";
-
   if (role === "nova") {
     bubble.innerHTML = formatNova(content);
   } else {
@@ -696,8 +682,9 @@ async function sendMessage() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
-    const reply = data.message.content.trim();
+    if (data.error) throw new Error(data.error);
 
+    const reply = data.message.content.trim();
     history.push({ role: "assistant", content: reply });
     hideTyping();
     appendMessage("nova", reply);
@@ -724,8 +711,6 @@ async function sendMessage() {
 }
 
 init();
-
-  }
 </script>
 </body>
 </html>

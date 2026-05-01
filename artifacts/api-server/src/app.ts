@@ -7,6 +7,8 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
@@ -30,9 +32,14 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const sessionSecret = process.env.SECRET_KEY;
+if (!sessionSecret && process.env.NODE_ENV === "production") {
+  throw new Error("SECRET_KEY environment variable is required in production.");
+}
+
 app.use(
   session({
-    secret: process.env.SECRET_KEY || "clarixs-default-secret-change-me",
+    secret: sessionSecret || "clarixs-dev-only-secret",
     resave: false,
     saveUninitialized: false,
     cookie: {

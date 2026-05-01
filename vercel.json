@@ -1,11 +1,16 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/chat.py", "use": "@vercel/python" },
+    { "src": "api/index.py", "use": "@vercel/python" },
     { "src": "nova.html", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/api/chat", "dest": "/api/chat.py" },
+    { "src": "/login", "dest": "/api/index.py" },
+    { "src": "/logout", "dest": "/api/index.py" },
+    { "src": "/callback", "dest": "/api/index.py" },
+    { "src": "/me", "dest": "/api/index.py" },
+    { "src": "/history", "dest": "/api/index.py" },
+    { "src": "/chat", "dest": "/api/index.py" },
     { "src": "/", "dest": "/nova.html" }
   ]
 }
